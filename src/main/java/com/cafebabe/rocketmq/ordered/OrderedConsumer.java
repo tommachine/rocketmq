@@ -1,32 +1,48 @@
-package com.cafebabe.rocketmq.simple;
+package com.cafebabe.rocketmq.ordered;
 
 import com.cafebabe.rocketmq.constant.RocketmqConstant;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyStatus;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 
-import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
 import java.util.List;
 
-public class SimpleConsumer {
+/**
+ * @author cafebabe on 2021/8/8 10:51
+ */
+public class OrderedConsumer {
+
     public static void main(String[] args) throws MQClientException {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(RocketmqConstant.SIMPLE_CONSUMER_GROUP);
+
         consumer.setNamesrvAddr(RocketmqConstant.NAMESRV_ADDR);
-        consumer.subscribe(RocketmqConstant.SIMPLE_TOPIC, RocketmqConstant.SIMPLE_TAG);
+
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
-        consumer.registerMessageListener(new MessageListenerConcurrently() {
+
+        consumer.subscribe(RocketmqConstant.ORDERED_TOPIC, RocketmqConstant.ORDERED_TAG);
+
+        //单线程顺序消费
+        consumer.registerMessageListener(new MessageListenerOrderly() {
+
             @Override
-            public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
+            public ConsumeOrderlyStatus consumeMessage(List<MessageExt> msgs, ConsumeOrderlyContext context) {
+                LocalTime localTime = LocalTime.now();
                 for (MessageExt msg : msgs) {
-                    System.out.println("消费者接收到消息：" + new String(msg.getBody(), StandardCharsets.UTF_8));
+                    System.out.println(localTime.toString() + ":" + new String(msg.getBody()));
                 }
-                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                return ConsumeOrderlyStatus.SUCCESS;
             }
         });
+
         consumer.start();
+
     }
 }

@@ -1,4 +1,4 @@
-package com.cafebabe.rocketmq.simple;
+package com.cafebabe.rocketmq.transaction;
 
 import com.cafebabe.rocketmq.constant.RocketmqConstant;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
@@ -12,17 +12,23 @@ import org.apache.rocketmq.common.message.MessageExt;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-public class SimpleConsumer {
+/**
+ * @author cafebabe on 2021/8/8 13:27
+ */
+public class TranscationConsumer {
     public static void main(String[] args) throws MQClientException {
-        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(RocketmqConstant.SIMPLE_CONSUMER_GROUP);
-        consumer.setNamesrvAddr(RocketmqConstant.NAMESRV_ADDR);
-        consumer.subscribe(RocketmqConstant.SIMPLE_TOPIC, RocketmqConstant.SIMPLE_TAG);
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(RocketmqConstant.TRANSACTION_CONSUMER_GROUP);
+
         consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
+        consumer.setNamesrvAddr(RocketmqConstant.NAMESRV_ADDR);
+        consumer.subscribe(RocketmqConstant.TRANSACTION_TOPIC, RocketmqConstant.TRANSACTION_TAG);
+
         consumer.registerMessageListener(new MessageListenerConcurrently() {
+
             @Override
-            public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
+            public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> msgs, ConsumeConcurrentlyContext context) {
                 for (MessageExt msg : msgs) {
-                    System.out.println("消费者接收到消息：" + new String(msg.getBody(), StandardCharsets.UTF_8));
+                    System.out.println("messageKey:[" + msg.getKeys() + "]message :[" + new String(msg.getBody(), StandardCharsets.UTF_8) + "]");
                 }
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
